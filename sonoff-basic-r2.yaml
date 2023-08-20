@@ -2,10 +2,14 @@
 substitutions:
   device_name: sonoff-basic-r2
   friendly_name: Sonoff Basic R2
-  device_description: "Sonoff DIY Smart Switch"
+  device_description: Sonoff DIY Smart Switch
 
+  # Device customisation
+  channel_name: Light
+  
+  # Project info
   project_name: "sonoff.basic-r2"
-  project_version: "0.1"
+  project_version: "0.2"
 
   # Webserver credentials
   web_username: 'sonoff'
@@ -49,29 +53,35 @@ web_server:
 
 binary_sensor:
   - platform: gpio
+    name: Button
     pin:
       number: GPIO0
       mode:
         input: true
         pullup: true
       inverted: true
-    name: Button
+    disabled_by_default: true
     on_multi_click:
       - timing:
           - ON for at most 1s
-          - OFF for at least 0.1s
+          - OFF for at least 0.01s
         then:
-          - switch.toggle: relay
+          - light.toggle: light
       - timing:
           - ON for at least 4s
         then:
           - button.press: reset
 
-switch:
+output:
   - platform: gpio
-    name: Relay
     pin: GPIO12
     id: relay
+
+light:
+  - platform: binary
+    name: ${channel_name}
+    output: relay
+    id: light
 
 status_led:
   pin:
@@ -87,7 +97,7 @@ button:
     id: reset
 
 sensor:
-  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+  - platform: wifi_signal
     name: WiFi Signal dB
     id: wifi_signal_db
     update_interval: 60s
