@@ -9,7 +9,7 @@ substitutions:
   
   # Project info
   project_name: "sonoff.basic-r2"
-  project_version: "0.2"
+  project_version: "0.3"
 
   # Webserver credentials
   web_username: 'sonoff'
@@ -66,7 +66,7 @@ binary_sensor:
           - ON for at most 1s
           - OFF for at least 0.01s
         then:
-          - light.toggle: light
+          - light.toggle: light_1
       - timing:
           - ON for at least 4s
         then:
@@ -75,13 +75,13 @@ binary_sensor:
 output:
   - platform: gpio
     pin: GPIO12
-    id: relay
+    id: relay_1
 
 light:
   - platform: binary
     name: ${channel_name}
-    output: relay
-    id: light
+    output: relay_1
+    id: light_1
 
 status_led:
   pin:
