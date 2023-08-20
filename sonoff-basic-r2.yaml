@@ -25,7 +25,7 @@ esp8266:
   restore_from_flash: true
 
 dashboard_import:
-  package_import_url: github://scsole/esphome-device-configs/sonoff-basicr2-v1_4.yaml@main
+  package_import_url: github://scsole/esphome-device-configs/sonoff-basic-r2.yaml@main
 
 wifi:
   ap: {}
