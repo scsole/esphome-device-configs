@@ -1,25 +1,23 @@
 ---
 substitutions:
+  # Device defaults
   device_name: sonoff-basic-r2
   friendly_name: Sonoff Basic R2
   device_description: Sonoff DIY Smart Switch
+  channel_1_name: Light
 
-  # Device customisation
-  channel_name: Light
-  
   # Project info
   project_name: "sonoff.basic-r2"
-  project_version: "0.3"
+  project_version: "1.0"
 
-  # Webserver credentials
-  web_username: 'sonoff'
-  web_password: 'esphome'
+  # Credentials
+  wifi_password: "12345678"
 
 esphome:
-  name: '${device_name}'
+  name: "${device_name}"
   name_add_mac_suffix: true
-  friendly_name: '${friendly_name}'
-  comment: '${device_description}'
+  friendly_name: "${friendly_name}"
+  comment: "${device_description}"
   project:
     name: "${project_name}"
     version: "${project_version}"
@@ -28,28 +26,28 @@ esp8266:
   board: esp01_1m
   restore_from_flash: true
 
+# To be able to get logs from the device via serial and api.
+logger:
+
+# API is a requirement of the dashboard import.
+api:
+
+# OTA is required for Over-the-Air updating.
+ota:
+  reboot_timeout: 10min
+  num_attempts: 5
+
+# Public location of this yaml file.
 dashboard_import:
   package_import_url: github://scsole/esphome-device-configs/sonoff-basic-r2.yaml@main
 
 wifi:
-  ap: {}
+  # Setup a wifi access point.
+  ap:
+    password: "${wifi_password}"
 
+# In combination with wifi `ap`, allow the user to provision wifi credentials to the device.
 captive_portal:
-
-logger:
-
-api:
-
-ota:
-  safe_mode: true
-  reboot_timeout: 10min
-  num_attempts: 5
-
-web_server:
-  port: 80
-  auth:
-    username: '${web_username}'
-    password: '${web_password}'
 
 binary_sensor:
   - platform: gpio
@@ -79,7 +77,7 @@ output:
 
 light:
   - platform: binary
-    name: ${channel_name}
+    name: "${channel_1_name}"
     output: relay_1
     id: light_1
 
