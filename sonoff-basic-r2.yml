@@ -1,0 +1,102 @@
+---
+substitutions:
+  device_name: sonoff-basic-r2
+  friendly_name: Sonoff Basic R2
+  device_description: "Sonoff DIY Smart Switch"
+
+  project_name: "sonoff.basic-r2"
+  project_version: "0.1"
+
+  # Webserver credentials
+  web_username: 'sonoff'
+  web_password: 'esphome'
+
+esphome:
+  name: '${device_name}'
+  name_add_mac_suffix: true
+  friendly_name: '${friendly_name}'
+  comment: '${device_description}'
+  project:
+    name: "${project_name}"
+    version: "${project_version}"
+
+esp8266:
+  board: esp01_1m
+  restore_from_flash: true
+
+dashboard_import:
+  package_import_url: github://scsole/esphome-device-configs/sonoff-basicr2-v1_4.yaml@main
+
+wifi:
+  ap: {}
+
+captive_portal:
+
+logger:
+
+api:
+
+ota:
+  safe_mode: true
+  reboot_timeout: 10min
+  num_attempts: 5
+
+web_server:
+  port: 80
+  auth:
+    username: '${web_username}'
+    password: '${web_password}'
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    name: Button
+    on_multi_click:
+      - timing:
+          - ON for at most 1s
+          - OFF for at least 0.1s
+        then:
+          - switch.toggle: relay
+      - timing:
+          - ON for at least 4s
+        then:
+          - button.press: reset
+
+switch:
+  - platform: gpio
+    name: Relay
+    pin: GPIO12
+    id: relay
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true
+
+button:
+  - platform: restart
+    name: Restart
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
+    disabled_by_default: true
+    id: reset
+
+sensor:
+  - platform: wifi_signal # Reports the WiFi signal strength/RSSI in dB
+    name: WiFi Signal dB
+    id: wifi_signal_db
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+    ssid:
+      name: Connected SSID
+    mac_address:
+      name: Mac Address
