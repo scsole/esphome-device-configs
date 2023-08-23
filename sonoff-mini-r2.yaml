@@ -1,0 +1,138 @@
+---
+substitutions:
+  # Device defaults
+  device_name: sonoff-mini-r2
+  friendly_name: Sonoff Mini R2
+  device_description: Sonoff DIY Smart Switch
+  channel_1_name: Light
+  restore_mode: RESTORE_DEFAULT_OFF
+
+  # Project info
+  project_name: "sonoff.mini-r2"
+  project_version: "2.0"
+
+  # Credentials
+  wifi_password: "12345678"
+
+esphome:
+  name: "${device_name}"
+  name_add_mac_suffix: true
+  friendly_name: "${friendly_name}"
+  comment: "${device_description}"
+  project:
+    name: "${project_name}"
+    version: "${project_version}"
+
+esp8266:
+  board: esp01_1m
+  restore_from_flash: true
+
+# To be able to get logs from the device via serial and api.
+logger:
+
+# API is a requirement of the dashboard import.
+api:
+
+# OTA is required for Over-the-Air updating.
+ota:
+  reboot_timeout: 15min
+  num_attempts: 4
+
+# Public location of this yaml file.
+dashboard_import:
+  package_import_url: github://scsole/esphome-device-configs/sonoff-mini-r2.yaml@develop
+
+wifi:
+  # Setup a wifi access point.
+  ap:
+    password: "${wifi_password}"
+
+# In combination with wifi `ap`, allow the user to provision wifi credentials to the device.
+captive_portal:
+
+binary_sensor:
+  # Built-in button
+  - platform: gpio
+    name: Button
+    pin:
+      number: GPIO0
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    internal: true
+    on_multi_click:
+      - timing:
+          - ON for at most 1s
+          - OFF for at least 0.01s
+        then:
+          - light.toggle: light_1
+      - timing:
+          - ON for at least 4s
+        then:
+          - button.press: reset
+  # External switch
+  - platform: gpio
+    name: Input
+    pin: GPIO04
+    id: switch_1
+    disabled_by_default: true
+    # Edge
+    on_press:
+      then:
+        - light.toggle:
+            id: light_1
+    on_release:
+      then:
+        - light.toggle:
+            id: light_1
+    # Toggle
+    # on_press:
+    #   then:
+    #     - light.turn_on:
+    #         id: light_1
+    # on_release:
+    #   then:
+    #     - light.turn_off:
+    #         id: light_1
+
+output:
+  - platform: gpio
+    pin: GPIO12
+    id: relay_1
+
+light:
+  - platform: binary
+    name: "${channel_1_name}"
+    output: relay_1
+    id: light_1
+    restore_mode: ${restore_mode}
+
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true
+
+button:
+  - platform: restart
+    name: Restart
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
+    disabled_by_default: true
+    id: reset
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal dB
+    id: wifi_signal_db
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+    ssid:
+      name: Connected SSID
+    mac_address:
+      name: Mac Address
