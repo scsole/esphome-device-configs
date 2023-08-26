@@ -40,7 +40,7 @@ ota:
 
 # Public location of this yaml file.
 dashboard_import:
-  package_import_url: github://scsole/esphome-device-configs/sonoff-mini-r2.yaml@develop
+  package_import_url: github://scsole/esphome-device-configs/sonoff-mini-r2.yaml@main
 
 wifi:
   # Setup a wifi access point.
