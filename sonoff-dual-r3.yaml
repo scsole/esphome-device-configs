@@ -44,7 +44,7 @@ ota:
 
 # Public location of this yaml file.
 dashboard_import:
-  package_import_url: github://scsole/esphome-device-configs/sonoff-dual-r3.yaml@develop
+  package_import_url: github://scsole/esphome-device-configs/sonoff-dual-r3.yaml@main
 
 wifi:
   # Setup a wifi access point.
