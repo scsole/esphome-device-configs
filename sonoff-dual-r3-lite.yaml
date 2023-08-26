@@ -5,7 +5,7 @@ substitutions:
   friendly_name: Sonoff Dual R3 Lite
   device_description: Sonoff Dual Relay Wi-Fi Smart Switch 
   channel_1_name: Light 1
-  channel_1_name: Light 2
+  channel_2_name: Light 2
   restore_mode: RESTORE_DEFAULT_OFF
 
   # Project info
