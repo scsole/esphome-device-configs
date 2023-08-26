@@ -8,7 +8,7 @@ substitutions:
 
   # Project info
   project_name: "sonoff.basic-r2"
-  project_version: "1.0"
+  project_version: "1.3"
 
   # Credentials
   wifi_password: "12345678"
