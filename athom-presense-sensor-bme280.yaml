@@ -2,10 +2,9 @@
 substitutions:
   name: "athom-presence-sensor"
   friendly_name: "presence sensor"
-  room: ""
   device_description: "mmwave radar human presence sensor"
   project_name: "Athom Technology.Presence Sensor"
-  project_version: "1.0"
+  project_version: "1.0-bme280"
 
 esphome:
   name: "${name}"
@@ -41,7 +40,8 @@ wifi:
 captive_portal:
 
 dashboard_import:
-  package_import_url: github://athom-tech/athom-configs/athom-presence-sensor.yaml
+  package_import_url: github://scsole/esphome-device-configs/athom-presence-sensor-bme280.yaml
+  # package_import_url: github://athom-tech/athom-configs/athom-presence-sensor.yaml
 
 light:
   - platform: status_led
@@ -67,7 +67,6 @@ uart:
   #     delimiter: "\n"
   #   sequence:
   #     - lambda: UARTDebug::log_string(direction, bytes);
-
 
 binary_sensor:
   - platform: status
@@ -117,7 +116,6 @@ binary_sensor:
       then:
         - light.turn_off: led
 
-
   - platform: template
     name: "Occupancy"
     id: occupancy
@@ -146,6 +144,16 @@ sensor:
     address: 0x23
     update_interval: 5s
 
+  - platform: bme280
+    temperature:
+      name: "Temperature"
+    pressure:
+      name: "Pressure"
+    humidity:
+      name: "Humidity"
+    address: 0x76
+    update_interval: 30s
+
 switch:
   - platform: template
     name: "mmWave Status"
@@ -158,8 +166,6 @@ switch:
       - uart.write: "sensorStart\r\n"
     turn_off_action:
       - uart.write: "sensorStop\r\n"
-
-
 
 number:
   - platform: template
@@ -185,7 +191,6 @@ number:
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
 
-
   - platform: template
     name: Maintain Sensitivity                 #Value range: 0 ~ 9   Default Maintain sensitivity: 7    Default Trigger sensitivity: 5
     id: Maintain_Sensitivity
@@ -208,7 +213,6 @@ number:
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
 
-
   - platform: template
     name: Trigger Sensitivity     #Value range: 0 ~ 9   Default Maintain sensitivity: 7    Default Trigger sensitivity: 5
     id: Trigger_Sensitivity
@@ -230,7 +234,6 @@ number:
       - uart.write: "saveConfig\r\n"
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
-
 
   - platform: template
     name: Detection Delay      #Confirmation delay      Value range: 0 ～ 100  default 0.050 seconds.
@@ -277,7 +280,6 @@ number:
       - uart.write: "saveConfig\r\n"
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
-
 
   - platform: template
     name: Blockade Time                  #Configure block time        Value range: 1 ～ 255, default 1 seconds.
