@@ -97,9 +97,9 @@ binary_sensor:
       - delayed_on: 50ms
       - delayed_off: 10s
     device_class: motion
-    on_press:
-      then:
-        - light.turn_on: led
+    # on_press:
+    #   then:
+    #     - light.turn_on: led
 
   - platform: gpio
     pin:
@@ -112,10 +112,9 @@ binary_sensor:
     filters:
       - delayed_on: 50ms
     device_class: motion
-    on_release:
-      then:
-        - light.turn_off: led
-
+    # on_release:
+    #   then:
+    #     - light.turn_off: led
 
   - platform: template
     name: "Occupancy"
