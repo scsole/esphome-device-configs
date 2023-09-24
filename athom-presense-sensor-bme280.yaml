@@ -40,8 +40,7 @@ wifi:
 captive_portal:
 
 dashboard_import:
-  package_import_url: github://scsole/esphome-device-configs/athom-presence-sensor-bme280.yaml
-  # package_import_url: github://athom-tech/athom-configs/athom-presence-sensor.yaml
+  package_import_url: github://athom-tech/athom-configs/athom-presence-sensor.yaml
 
 light:
   - platform: status_led
@@ -67,6 +66,7 @@ uart:
   #     delimiter: "\n"
   #   sequence:
   #     - lambda: UARTDebug::log_string(direction, bytes);
+
 
 binary_sensor:
   - platform: status
@@ -115,6 +115,7 @@ binary_sensor:
     on_release:
       then:
         - light.turn_off: led
+
 
   - platform: template
     name: "Occupancy"
@@ -167,6 +168,7 @@ switch:
     turn_off_action:
       - uart.write: "sensorStop\r\n"
 
+
 number:
   - platform: template
     name: Farthest Detection          #Value range: 1.9 ~ 12m  Default: 6
@@ -191,6 +193,7 @@ number:
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
 
+
   - platform: template
     name: Maintain Sensitivity                 #Value range: 0 ~ 9   Default Maintain sensitivity: 7    Default Trigger sensitivity: 5
     id: Maintain_Sensitivity
@@ -213,6 +216,7 @@ number:
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
 
+
   - platform: template
     name: Trigger Sensitivity     #Value range: 0 ~ 9   Default Maintain sensitivity: 7    Default Trigger sensitivity: 5
     id: Trigger_Sensitivity
@@ -234,6 +238,7 @@ number:
       - uart.write: "saveConfig\r\n"
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
+
 
   - platform: template
     name: Detection Delay      #Confirmation delay      Value range: 0 ～ 100  default 0.050 seconds.
@@ -280,6 +285,7 @@ number:
       - uart.write: "saveConfig\r\n"
       - delay: 500ms
       - switch.turn_on: mmwave_sensor
+
 
   - platform: template
     name: Blockade Time                  #Configure block time        Value range: 1 ～ 255, default 1 seconds.
