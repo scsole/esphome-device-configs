@@ -1,8 +1,8 @@
 ---
 substitutions:
   name: "athom-presence-sensor"
-  friendly_name: "presence sensor"
-  device_description: "mmwave radar human presence sensor"
+  friendly_name: "Presence Sensor"
+  device_description: "mmWave radar human presence sensor"
   project_name: "Athom Technology.Presence Sensor"
   project_version: "1.0-bme280"
 
@@ -134,14 +134,14 @@ binary_sensor:
 
 sensor:
   - platform: uptime
-    name: "Uptime Sensor"
+    name: "Uptime"
 
   - platform: wifi_signal
-    name: "WiFi Signal Sensor"
+    name: "WiFi Signal"
     update_interval: 60s
 
   - platform: bh1750
-    name: "Light Sensor"
+    name: "Illuminance"
     address: 0x23
     update_interval: 5s
 
