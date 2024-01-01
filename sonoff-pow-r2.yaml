@@ -1,0 +1,146 @@
+---
+substitutions:
+  # Device defaults
+  device_name: sonoff-pow-r2
+  friendly_name: Sonoff Pow R2
+  device_description: Sonoff 15A Wi-Fi Smart Switch with Power Metering
+  channel_1_name: Relay
+
+  # Project info
+  project_name: "sonoff.pow-r2"
+  project_version: "2.0"
+
+  # Credentials
+  wifi_password: "12345678"
+
+esphome:
+  name: "${device_name}"
+  name_add_mac_suffix: true
+  friendly_name: "${friendly_name}"
+  comment: "${device_description}"
+  project:
+    name: "${project_name}"
+    version: "${project_version}"
+
+esp8266:
+  board: esp01_1m
+  restore_from_flash: true
+
+# To be able to get logs from the device via serial and api.
+logger:
+  baud_rate: 0 # Disable logging over USB
+
+# API is a requirement of the dashboard import.
+api:
+
+# OTA is required for Over-the-Air updating.
+ota:
+  reboot_timeout: 10min
+  num_attempts: 5
+
+# Public location of this yaml file.
+dashboard_import:
+  package_import_url: github://scsole/esphome-device-configs/sonoff-pow-r2.yaml@main
+
+wifi:
+  # Setup a wifi access point.
+  ap:
+    password: "${wifi_password}"
+
+# In combination with wifi `ap`, allow the user to provision wifi credentials to the device.
+captive_portal:
+
+binary_sensor:
+  - platform: gpio
+    name: Button
+    pin:
+      number: GPIO0
+      mode:
+        input: true
+        pullup: true
+      inverted: true
+    disabled_by_default: true
+    on_multi_click:
+      - timing:
+          - ON for at most 1s
+          - OFF for at least 0.01s
+        then:
+          - switch.toggle: relay_1
+      - timing:
+          - ON for at least 4s
+        then:
+          - button.press: reset
+
+switch:
+  - platform: gpio
+    name: "${channel_1_name}"
+    pin: GPIO12
+    id: relay_1
+
+status_led:
+  pin:
+    number: GPIO13
+    inverted: true
+
+button:
+  - platform: restart
+    name: Restart
+  - platform: factory_reset
+    name: Restart with Factory Default Settings
+    disabled_by_default: true
+    id: reset
+
+uart:
+  rx_pin: RX
+  baud_rate: 4800
+
+sensor:
+  - platform: cse7766
+    update_interval: 5s
+    current:
+      name: Current
+      filters:
+        # Make everything below 0.01A appear as just 0A and roughly correct for the relay's power usage
+        - lambda: if (x < (0.01 + 0.01)) return 0; else return (x - 0.01);
+    voltage:
+      name: Voltage
+    power:
+      name: Power
+      id: power
+      filters:
+        # Make everything below 2W appear as just 0W and roughly correct for the relay's power usage
+        - lambda: if (x < (2.0 + 0.1)) return 0; else return (x - 0.1);
+    energy:
+      name: Energy
+      unit_of_measurement: kWh
+      filters:
+        # Multiplication factor from W to kW is 0.001
+        - multiply: 0.001
+  - platform: total_daily_energy
+    name: Total Daily Energy
+    power_id: power
+    unit_of_measurement: 'kWh'
+    state_class: total_increasing
+    device_class: energy
+    accuracy_decimals: 3
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+  - platform: wifi_signal
+    name: WiFi Signal dB
+    id: wifi_signal_db
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+    ssid:
+      name: Connected SSID
+    mac_address:
+      name: Mac Address
+
+# Enable time component to reset energy at midnight
+time:
+  - platform: homeassistant
+    id: homeassistant_time
