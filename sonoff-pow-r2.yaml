@@ -76,6 +76,7 @@ switch:
     name: "${channel_1_name}"
     pin: GPIO12
     id: relay_1
+    restore_mode: RESTORE_DEFAULT_ON
 
 status_led:
   pin:
