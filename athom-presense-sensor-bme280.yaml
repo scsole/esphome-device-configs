@@ -144,7 +144,7 @@ sensor:
     address: 0x23
     update_interval: 5s
 
-  - platform: bme280
+  - platform: bme280_i2c
     temperature:
       name: "Temperature"
     pressure:
