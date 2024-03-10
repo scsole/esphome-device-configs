@@ -5,6 +5,7 @@ substitutions:
   friendly_name: Sonoff Pow R2
   device_description: Sonoff 15A Wi-Fi Smart Switch with Power Metering
   channel_1_name: Relay
+  sensor_update_interval: 10s
 
   # Project info
   project_name: "sonoff.pow-r2"
@@ -97,26 +98,30 @@ uart:
 
 sensor:
   - platform: cse7766
-    update_interval: 5s
     current:
       name: Current
       filters:
         # Make everything below 0.01A appear as just 0A and roughly correct for the relay's power usage
         - lambda: if (x < (0.01 + 0.01)) return 0; else return (x - 0.01);
+        - throttle_average: ${sensor_update_interval}
     voltage:
       name: Voltage
+      filters:
+        - throttle_average: ${sensor_update_interval}
     power:
       name: Power
       id: power
       filters:
         # Make everything below 2W appear as just 0W and roughly correct for the relay's power usage
         - lambda: if (x < (2.0 + 0.1)) return 0; else return (x - 0.1);
+        - throttle_average: ${sensor_update_interval}
     energy:
       name: Energy
       unit_of_measurement: kWh
       filters:
         # Multiplication factor from W to kW is 0.001
         - multiply: 0.001
+        - throttle_average: ${sensor_update_interval}
   - platform: total_daily_energy
     name: Total Daily Energy
     power_id: power
