@@ -39,8 +39,7 @@ api:
 
 # OTA is required for Over-the-Air updating.
 ota:
-  reboot_timeout: 15min
-  num_attempts: 4
+  - platform: esphome
 
 # Public location of this yaml file.
 dashboard_import:
