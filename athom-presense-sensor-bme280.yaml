@@ -27,6 +27,7 @@ logger:
 api:
 
 ota:
+  - platform: esphome
 
 mdns:
   disabled: false
