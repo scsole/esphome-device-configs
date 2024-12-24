@@ -1,0 +1,5 @@
+---
+# The timestamp type requires the time component
+platform: uptime
+name: Uptime
+type: timestamp

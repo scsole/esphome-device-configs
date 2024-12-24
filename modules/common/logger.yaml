@@ -1,0 +1,11 @@
+---
+substitutions:
+  # Define logging level: NONE, ERROR, WARN, INFO, DEBUG (Default), VERBOSE, VERY_VERBOSE
+  log_level: "INFO"
+  # Disable logging over USB
+  logger_baud_rate: "0"
+
+# To be able to get logs from the device via serial and api
+logger:
+  level: ${log_level}
+  baud_rate: $logger_baud_rate
