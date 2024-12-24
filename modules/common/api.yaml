@@ -1,0 +1,9 @@
+---
+substitutions:
+  api_reboot_timeout: "30min"
+
+# API is a requirement of the dashboard import
+api:
+  reboot_timeout: $api_reboot_timeout
+  # encryption:
+  #   key: !secret api_encryption_key

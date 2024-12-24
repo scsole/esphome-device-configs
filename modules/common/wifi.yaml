@@ -1,0 +1,29 @@
+---
+wifi:
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  # Use the device name as the ssid with no password
+  ap: {}
+
+captive_portal:
+
+# Sets up Bluetooth LE (Only on ESP32) to allow the user
+# to provision wifi credentials to the device.
+# esp32_improv:
+#   authorizer: none
+
+# Sets up the improv via serial client for Wi-Fi provisioning
+# improv_serial:
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal
+    update_interval: 60s
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+    ssid:
+      name: Connected SSID
+    mac_address:
+      name: MAC Address

@@ -1,0 +1,26 @@
+---
+substitutions:
+  comment: ""
+  area: ""
+  name_add_mac_suffix: "true"
+
+esphome:
+  name: $name
+  # Friendly names are used where appropriate in Home Assistant
+  friendly_name: $friendly_name
+  comment: $comment
+  area: $area
+  # Automatically add the mac address to the device name
+  name_add_mac_suffix: $name_add_mac_suffix
+
+packages:
+  preferences: !include common/preferences.yaml
+  logger: !include common/logger.yaml
+  api: !include common/api.yaml
+  ota: !include common/ota.yaml
+  time: !include common/time.yaml
+  binary_sensors: !include common/binary_sensors.yaml
+  sensors: !include common/sensors.yaml
+  buttons: !include common/buttons.yaml
+  wifi: !include common/wifi.yaml
+  # web_server: !include common/web_server.yaml
