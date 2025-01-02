@@ -20,7 +20,7 @@ esphome:
   min_version: 2024.6.0
   project:
     name: "Athom Technology.Smart Plug V3"
-    version: "v1.0.0-scsole"
+    version: "v1.1.0-scsole"
   platformio_options:
     board_build.mcu: esp32c3
     board_build.variant: esp32c3
@@ -102,6 +102,11 @@ binary_sensor:
           - ON for at least 4s
         then:
           - button.press: factory_reset_button
+  - platform: template
+    name: "Overcurrent"
+    id: overcurrent
+    device_class: problem
+    entity_category: diagnostic
 
 uart:
   rx_pin: GPIO20
@@ -123,6 +128,9 @@ sensor:
         - above: ${current_limit}
           then:
             - switch.turn_off: relay
+            - binary_sensor.template.publish:
+                id: overcurrent
+                state: true
       disabled_by_default: true
     power:
       name: "Power"
@@ -185,6 +193,10 @@ switch:
     id: relay
     restore_mode: ${switch_restore_mode}
     icon: ${switch_icon}
+    on_turn_on:
+      - binary_sensor.template.publish:
+          id: overcurrent
+          state: false
 
 button:
   - platform: template
