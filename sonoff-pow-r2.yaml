@@ -1,95 +1,98 @@
 ---
 substitutions:
-  # Device defaults
-  device_name: sonoff-pow-r2
-  friendly_name: Sonoff Pow R2
-  device_description: Sonoff 15A Wi-Fi Smart Switch with Power Metering
-  channel_1_name: Relay
-  sensor_update_interval: 10s
+  name: "sonoff-pow-r2"
+  friendly_name: "Sonoff POW R2"
+  comment: "Sonoff POWR2 Smart Switch"
 
-  # Project info
-  project_name: "sonoff.pow-r2"
-  project_version: "2.0"
+  # Time between sensor updates
+  update_interval: "10s"
+  # Current Limit in amps
+  current_limit: "15"
+  # Underlying restore mode for the switch
+  switch_restore_mode: "RESTORE_DEFAULT_OFF"
 
-  # Credentials
-  wifi_password: "12345678"
+packages:
+  base: !include modules/base.yaml
 
 esphome:
-  name: "${device_name}"
-  name_add_mac_suffix: true
-  friendly_name: "${friendly_name}"
-  comment: "${device_description}"
+  min_version: 2024.6.0
   project:
-    name: "${project_name}"
-    version: "${project_version}"
+    name: "Sonoff.POWR2"
+    version: "v1.1.0-scsole"
+  on_boot:
+    - priority: 600
+      then:
+        - select.set_index:
+            id: power_mode
+            index: !lambda |-
+              return id(restore_mode) - 1;
+        - lambda: |-
+            switch(id(restore_mode))
+            {
+              case 1:
+                id(relay).turn_off();
+                break;
+              case 2:
+                id(relay).turn_on();
+                break;
+              default:
+                break;
+            }
 
 esp8266:
   board: esp01_1m
-  restore_from_flash: true
 
-# To be able to get logs from the device via serial and api.
-logger:
-  baud_rate: 0 # Disable logging over USB
-
-# API is a requirement of the dashboard import.
-api:
-
-# OTA is required for Over-the-Air updating.
-ota:
-  - platform: esphome
-
-# Public location of this yaml file.
 dashboard_import:
-  package_import_url: github://scsole/esphome-device-configs/sonoff-pow-r2.yaml@main
+  package_import_url: github://scsole/esphome-device-configs/sonoff-pow-r2.yaml
+  import_full_config: false
 
-wifi:
-  # Setup a wifi access point.
-  ap:
-    password: "${wifi_password}"
+globals:
+  - id: restore_mode
+    type: int
+    restore_value: yes
+    initial_value: "3" # 1 = Always_Off, 2 = Always_On, 3 = Restore_State
 
-# In combination with wifi `ap`, allow the user to provision wifi credentials to the device.
-captive_portal:
+select:
+  - platform: template
+    name: Power On State
+    id: power_mode
+    optimistic: true
+    icon: mdi:electric-switch
+    options:
+      - Always Off
+      - Always On
+      - Restore State
+    on_value:
+      then:
+        - lambda: |-
+            id(restore_mode) = i + 1;
+    entity_category: config
 
 binary_sensor:
   - platform: gpio
-    name: Button
     pin:
       number: GPIO0
-      mode:
-        input: true
-        pullup: true
+      mode: INPUT_PULLUP
       inverted: true
+    name: Button
     disabled_by_default: true
     on_multi_click:
       - timing:
           - ON for at most 1s
-          - OFF for at least 0.01s
+          - OFF for at least 0.1s
         then:
-          - switch.toggle: relay_1
+          - switch.toggle: relay
       - timing:
           - ON for at least 4s
         then:
-          - button.press: reset
+          - button.press: factory_reset_button
 
-switch:
-  - platform: gpio
-    name: "${channel_1_name}"
-    pin: GPIO12
-    id: relay_1
-    restore_mode: RESTORE_DEFAULT_ON
-
-status_led:
-  pin:
-    number: GPIO13
-    inverted: true
-
-button:
-  - platform: restart
-    name: Restart
-  - platform: factory_reset
-    name: Restart with Factory Default Settings
-    disabled_by_default: true
-    id: reset
+  - platform: template
+    name: Overcurrent
+    id: overcurrent
+    device_class: problem
+    entity_category: diagnostic
+    publish_initial_state: true
 
 uart:
   rx_pin: RX
@@ -98,55 +101,100 @@ uart:
 
 sensor:
   - platform: cse7766
-    current:
-      name: Current
-      filters:
-        # Make everything below 0.01A appear as just 0A and roughly correct for the relay's power usage
-        - lambda: if (x < (0.01 + 0.01)) return 0; else return (x - 0.01);
-        - throttle_average: ${sensor_update_interval}
     voltage:
       name: Voltage
       filters:
-        - throttle_average: ${sensor_update_interval}
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    current:
+      name: Current
+      filters:
+        - throttle_average: ${update_interval}
+      on_value_range:
+        - above: ${current_limit}
+          then:
+            - switch.turn_off: relay
+            - binary_sensor.template.publish:
+                id: overcurrent
+                state: true
+      disabled_by_default: true
     power:
       name: Power
-      id: power
+      id: power_sensor
       filters:
-        # Make everything below 2W appear as just 0W and roughly correct for the relay's power usage
-        - lambda: if (x < (2.0 + 0.1)) return 0; else return (x - 0.1);
-        - throttle_average: ${sensor_update_interval}
+        - throttle_average: ${update_interval}
     energy:
       name: Energy
       unit_of_measurement: kWh
       filters:
+        - throttle: ${update_interval}
         # Multiplication factor from W to kW is 0.001
         - multiply: 0.001
-        - throttle_average: ${sensor_update_interval}
+      disabled_by_default: true
+    apparent_power:
+      name: Apparent Power
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    reactive_power:
+      name: Reactive Power
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    power_factor:
+      name: Power Factor
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+
   - platform: total_daily_energy
     name: Total Daily Energy
-    power_id: power
-    unit_of_measurement: 'kWh'
-    state_class: total_increasing
+    power_id: power_sensor
+    unit_of_measurement: kWh
     device_class: energy
     accuracy_decimals: 3
     filters:
       # Multiplication factor from W to kW is 0.001
       - multiply: 0.001
-  - platform: wifi_signal
-    name: WiFi Signal dB
-    id: wifi_signal_db
-    update_interval: 60s
 
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: IP Address
-    ssid:
-      name: Connected SSID
-    mac_address:
-      name: Mac Address
+  - platform: integration
+    name: Total Energy
+    id: total_energy
+    sensor: power_sensor
+    time_unit: h
+    integration_method: right
+    restore: true
+    state_class: total_increasing
+    unit_of_measurement: kWh
+    device_class: energy
+    accuracy_decimals: 3
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
 
-# Enable time component to reset energy at midnight
-time:
-  - platform: homeassistant
-    id: homeassistant_time
+switch:
+  - platform: gpio
+    name: Switch
+    pin: GPIO12
+    id: relay
+    restore_mode: ${switch_restore_mode}
+    on_turn_on:
+      - binary_sensor.template.publish:
+          id: overcurrent
+          state: false
+
+button:
+  - platform: template
+    name: Reset Total Energy
+    on_press:
+      - sensor.integration.reset: total_energy
+    entity_category: config
+
+light:
+  - platform: status_led
+    name: Status LED
+    pin:
+      number: GPIO13
+      inverted: true
+    entity_category: config
+    disabled_by_default: true
