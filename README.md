@@ -21,6 +21,6 @@ Main changes from stock firmware
 - Improve uptime sensor efficiency
 - Remove superfluous diagnostic sensors
 
-## Sonoff
+### Sonoff
 
 TODO: Refactor using modules
