@@ -11,6 +11,15 @@ substitutions:
   # Underlying restore mode for the switch
   switch_restore_mode: "RESTORE_DEFAULT_OFF"
 
+  # Power bellow this threshold will be reported as 0W
+  power_threshold: "0.2"
+  # Roughly correct for the relay's power usage
+  power_offset: "0.0"
+  # Current bellow this threshold will be reported as 0A
+  current_threshold: "0.1"
+  # Roughly correct for the relay's current draw
+  current_offset: "0.0"
+
 packages:
   base: !include modules/base.yaml
 
@@ -18,7 +27,7 @@ esphome:
   min_version: 2024.6.0
   project:
     name: "Sonoff.POWR2"
-    version: "v1.1.0-scsole"
+    version: "v1.1.1-scsole"
   on_boot:
     - priority: 600
       then:
@@ -110,6 +119,11 @@ sensor:
       name: Current
       filters:
         - throttle_average: ${update_interval}
+        - lambda: |-
+            if (x < (${current_threshold} + ${current_offset}))
+              return 0.0;
+            else
+              return (x - ${current_offset});
       on_value_range:
         - above: ${current_limit}
           then:
@@ -123,6 +137,11 @@ sensor:
       id: power_sensor
       filters:
         - throttle_average: ${update_interval}
+        - lambda: |-
+            if (x < (${power_threshold} + ${power_offset}))
+              return 0.0;
+            else
+              return (x - ${power_offset});
     energy:
       name: Energy
       unit_of_measurement: kWh
