@@ -20,7 +20,7 @@ esphome:
   min_version: 2024.6.0
   project:
     name: "Athom Technology.Smart Plug V3"
-    version: "v1.1.1-scsole"
+    version: "v1.0.0-scsole"
   platformio_options:
     board_build.mcu: esp32c3
     board_build.variant: esp32c3
