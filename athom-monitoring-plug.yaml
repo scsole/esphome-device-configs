@@ -5,7 +5,7 @@ substitutions:
   comment: "Athom Power Monitoring Plug without Relay"
 
   # Time between sensor updates
-  update_interval: "10s"
+  update_interval: "5s"
 
 packages:
   base: !include modules/base.yaml
@@ -14,7 +14,7 @@ esphome:
   min_version: 2024.6.0
   project:
     name: "Athom Technology.Athom Monitoring Plug"
-    version: "v1.0.0-scsole"
+    version: "v1.0.1-scsole"
 
 esp8266:
   board: esp8285
