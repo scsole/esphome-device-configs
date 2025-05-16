@@ -1,0 +1,126 @@
+---
+substitutions:
+  name: "athom-monitoring-plug"
+  friendly_name: "Athom Monitoring Plug"
+  comment: "Athom Power Monitoring Plug without Relay"
+
+  # Time between sensor updates
+  update_interval: "10s"
+
+packages:
+  base: !include modules/base.yaml
+
+esphome:
+  min_version: 2024.6.0
+  project:
+    name: "Athom Technology.Athom Monitoring Plug"
+    version: "v1.0.0-scsole"
+
+esp8266:
+  board: esp8285
+  restore_from_flash: true
+
+dashboard_import:
+  package_import_url: github://scsole/esphome-device-configs/athom-monitoring-plug.yaml
+  import_full_config: false
+
+uart:
+  rx_pin: RX
+  baud_rate: 4800
+  parity: EVEN
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 5
+      mode: INPUT_PULLUP
+      inverted: true
+    name: Button
+    disabled_by_default: true
+    on_multi_click:
+      - timing:
+          - ON for at least 4s
+        then:
+          - button.press: factory_reset_button
+
+sensor:
+  - platform: cse7766
+    voltage:
+      name: "Voltage"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    current:
+      name: "Current"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    power:
+      name: "Power"
+      id: power_sensor
+      filters:
+        - throttle_average: ${update_interval}
+    energy:
+      name: "Energy"
+      unit_of_measurement: kWh
+      filters:
+        - throttle: ${update_interval}
+        # Multiplication factor from W to kW is 0.001
+        - multiply: 0.001
+      disabled_by_default: true
+    apparent_power:
+      name: "Apparent Power"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    reactive_power:
+      name: "Reactive Power"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    power_factor:
+      name: "Power Factor"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+
+  - platform: total_daily_energy
+    name: "Total Daily Energy"
+    power_id: power_sensor
+    unit_of_measurement: kWh
+    device_class: energy
+    accuracy_decimals: 3
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+
+  - platform: integration
+    name: "Total Energy"
+    id: total_energy
+    sensor: power_sensor
+    time_unit: h
+    integration_method: right
+    restore: true
+    state_class: total_increasing
+    unit_of_measurement: kWh
+    device_class: energy
+    accuracy_decimals: 3
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+
+button:
+  - platform: template
+    name: Reset Total Energy
+    on_press:
+      - sensor.integration.reset: total_energy
+    entity_category: config
+
+light:
+  - platform: status_led
+    name: Status LED
+    pin:
+      number: GPIO13
+      inverted: true
+    entity_category: config
+    disabled_by_default: true
