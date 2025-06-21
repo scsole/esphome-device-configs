@@ -1,0 +1,209 @@
+---
+substitutions:
+  name: "athom-smart-plug-v2"
+  friendly_name: "Athom Smart Plug V2"
+  comment: "Athom Smart Plug V2"
+
+  # Time between sensor updates
+  update_interval: "5s"
+  # Current Limit in amps
+  current_limit: "10"
+  # Icon to show in Home Assistant
+  switch_icon: "mdi:power-socket-au"
+  # Underlying restore mode for the switch
+  switch_restore_mode: "RESTORE_DEFAULT_OFF"
+
+packages:
+  base: !include modules/base.yaml
+
+esphome:
+  min_version: 2024.6.0
+  project:
+    name: "Athom Technology.Smart Plug V2"
+    version: "v1.0.1-scsole"
+  on_boot:
+    - priority: 600
+      then:
+        - select.set_index:
+            id: power_mode
+            index: !lambda |-
+              return id(restore_mode) - 1;
+        - lambda: |-
+            switch(id(restore_mode))
+            {
+              case 1:
+              {
+                id(relay).turn_off();
+                break;
+              }
+              case 2:
+              {
+                id(relay).turn_on();
+                break;
+              }
+              default:
+              {
+                break;
+              }
+            }
+
+esp8266:
+  board: esp8285
+  restore_from_flash: true
+
+dashboard_import:
+  package_import_url: github://scsole/esphome-device-configs/athom-smart-plug-v2.yaml
+  import_full_config: false
+
+globals:
+  - id: restore_mode
+    type: int
+    restore_value: yes
+    initial_value: "3" # 1 = Always_Off, 2 = Always_On, 3 = Restore_State
+
+select:
+  - platform: template
+    name: "Power On State"
+    id: power_mode
+    optimistic: true
+    icon: mdi:electric-switch
+    options:
+      - Always Off
+      - Always On
+      - Restore State
+    on_value:
+      then:
+        - lambda: |-
+            id(restore_mode) = i + 1;
+    entity_category: config
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 5
+      mode: INPUT_PULLUP
+      inverted: true
+    name: Button
+    disabled_by_default: true
+    on_multi_click:
+      - timing:
+          - ON for at most 1s
+          - OFF for at least 0.1s
+        then:
+          - switch.toggle: relay
+      - timing:
+          - ON for at least 4s
+        then:
+          - button.press: factory_reset_button
+  - platform: template
+    name: "Overcurrent"
+    id: overcurrent
+    device_class: problem
+    entity_category: diagnostic
+    publish_initial_state: true
+
+uart:
+  rx_pin: RX
+  baud_rate: 4800
+  parity: EVEN
+
+sensor:
+  - platform: cse7766
+    voltage:
+      name: "Voltage"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    current:
+      name: "Current"
+      filters:
+        - throttle_average: ${update_interval}
+      on_value_range:
+        - above: ${current_limit}
+          then:
+            - switch.turn_off: relay
+            - binary_sensor.template.publish:
+                id: overcurrent
+                state: true
+      disabled_by_default: true
+    power:
+      name: "Power"
+      id: power_sensor
+      filters:
+        - throttle_average: ${update_interval}
+    energy:
+      name: "Energy"
+      unit_of_measurement: kWh
+      filters:
+        - throttle: ${update_interval}
+        # Multiplication factor from W to kW is 0.001
+        - multiply: 0.001
+      disabled_by_default: true
+    apparent_power:
+      name: "Apparent Power"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    reactive_power:
+      name: "Reactive Power"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+    power_factor:
+      name: "Power Factor"
+      filters:
+        - throttle_average: ${update_interval}
+      disabled_by_default: true
+
+  - platform: total_daily_energy
+    name: "Total Daily Energy"
+    power_id: power_sensor
+    unit_of_measurement: kWh
+    device_class: energy
+    accuracy_decimals: 3
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+
+  - platform: integration
+    name: "Total Energy"
+    id: total_energy
+    sensor: power_sensor
+    time_unit: h
+    integration_method: right
+    restore: true
+    state_class: total_increasing
+    unit_of_measurement: kWh
+    device_class: energy
+    accuracy_decimals: 3
+    filters:
+      # Multiplication factor from W to kW is 0.001
+      - multiply: 0.001
+
+switch:
+  - platform: gpio
+    name: Switch
+    pin: GPIO12
+    id: relay
+    restore_mode: ${switch_restore_mode}
+    icon: ${switch_icon}
+    on_turn_on:
+      - binary_sensor.template.publish:
+          id: overcurrent
+          state: false
+
+button:
+  - platform: template
+    name: Reset Total Energy
+    on_press:
+      - sensor.integration.reset: total_energy
+    entity_category: config
+
+light:
+  - platform: status_led
+    name: Status LED
+    pin:
+      number: GPIO13
+      inverted: true
+    entity_category: config
+    disabled_by_default: true
