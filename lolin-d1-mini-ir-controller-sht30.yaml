@@ -1,0 +1,78 @@
+---
+substitutions:
+  name: "lolin-ir-controller"
+  friendly_name: "Lolin IR Controller"
+  comment: "Lolin IR Controller with SHT30 Sensor"
+
+  # Time between sensor updates
+  update_interval: "30s"
+  climate_platform: "fujitsu_general"
+
+packages:
+  base: !include modules/base.yaml
+
+esphome:
+  min_version: 2024.6.0
+  project:
+    name: "Lolin.D1 Mini IR Controller SHT30"
+    version: "v1.0.0"
+
+esp8266:
+  board: d1_mini
+  restore_from_flash: true
+
+dashboard_import:
+  package_import_url: github://scsole/esphome-device-configs/lolin-d1-mini-ir-controller-sht30.yaml
+  import_full_config: false
+
+i2c:
+  sda: 4
+  scl: 5
+
+sensor:
+  - platform: sht3xd
+    temperature:
+      name: Temperature
+      id: temperature
+    humidity:
+      name: Humidity
+    address: 0x45
+    update_interval: ${update_interval}
+
+remote_transmitter:
+  pin: 0
+  carrier_duty_percent: 50%
+
+remote_receiver:
+  id: receiver
+  pin:
+    number: 2
+    inverted: true
+    mode:
+      input: true
+      pullup: true
+  # high 55% tolerance is recommended for some remote control units
+  tolerance: 55%
+
+climate:
+  - platform: ${climate_platform}
+    name: "Heat Pump"
+    receiver_id: receiver
+    sensor: temperature
+    supports_cool: true
+    supports_heat: true
+    visual:
+      min_temperature: 16
+      max_temperature: 30
+      temperature_step:
+        target_temperature: 1.0
+        current_temperature: 0.1
+
+# light:
+#   - platform: status_led
+#     name: Status LED
+#     pin:
+#       number: 2
+#       inverted: true
+#     entity_category: config
+#     disabled_by_default: true
