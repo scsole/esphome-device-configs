@@ -1,104 +1,110 @@
 ---
 substitutions:
-  # Device defaults
-  device_name: sonoff-s26
-  friendly_name: Sonoff S26
-  device_description: Sonoff Wi-Fi Smart Plug
-  channel_1_name: Relay
+  name: "sonoff-s26"
+  friendly_name: "Sonoff S26"
+  comment: "Sonoff S26 Wi-Fi Smart Plug"
 
-  # Project info
-  project_name: "sonoff.s26"
-  project_version: "1.1"
+  # Icon to show in Home Assistant
+  switch_icon: "mdi:power-socket-au"
+  # Underlying restore mode for the switch
+  switch_restore_mode: "RESTORE_DEFAULT_OFF"
 
-  # Credentials
-  wifi_password: "12345678"
+packages:
+  base: !include modules/base.yaml
 
 esphome:
-  name: "${device_name}"
-  name_add_mac_suffix: true
-  friendly_name: "${friendly_name}"
-  comment: "${device_description}"
+  min_version: 2024.6.0
   project:
-    name: "${project_name}"
-    version: "${project_version}"
+    name: "Sonoff.S26"
+    version: "v2.0.0-scsole"
+  on_boot:
+    - priority: 600
+      then:
+        - select.set_index:
+            id: power_mode
+            index: !lambda |-
+              return id(restore_mode) - 1;
+        - lambda: |-
+            switch(id(restore_mode))
+            {
+              case 1:
+              {
+                id(relay).turn_off();
+                break;
+              }
+              case 2:
+              {
+                id(relay).turn_on();
+                break;
+              }
+              default:
+              {
+                break;
+              }
+            }
 
 esp8266:
   board: esp01_1m
   restore_from_flash: true
 
-# To be able to get logs from the device via serial and api.
-logger:
-
-# API is a requirement of the dashboard import.
-api:
-
-# OTA is required for Over-the-Air updating.
-ota:
-  - platform: esphome
-
-# Public location of this yaml file.
 dashboard_import:
-  package_import_url: github://scsole/esphome-device-configs/sonoff-s26.yaml@main
+  package_import_url: github://scsole/esphome-device-configs/sonoff-s26.yaml
+  import_full_config: false
 
-wifi:
-  # Setup a wifi access point.
-  ap:
-    password: "${wifi_password}"
+globals:
+  - id: restore_mode
+    type: int
+    restore_value: yes
+    initial_value: "3" # 1 = Always_Off, 2 = Always_On, 3 = Restore_State
 
-# In combination with wifi `ap`, allow the user to provision wifi credentials to the device.
-captive_portal:
+select:
+  - platform: template
+    name: "Power On State"
+    id: power_mode
+    optimistic: true
+    icon: mdi:electric-switch
+    options:
+      - Always Off
+      - Always On
+      - Restore State
+    on_value:
+      then:
+        - lambda: |-
+            id(restore_mode) = i + 1;
+    entity_category: config
 
 binary_sensor:
   - platform: gpio
-    name: Button
     pin:
       number: GPIO0
-      mode:
-        input: true
-        pullup: true
+      mode: INPUT_PULLUP
       inverted: true
+    name: Button
     disabled_by_default: true
     on_multi_click:
       - timing:
           - ON for at most 1s
-          - OFF for at least 0.01s
+          - OFF for at least 0.1s
         then:
-          - switch.toggle: relay_1
+          - switch.toggle: relay
       - timing:
           - ON for at least 4s
         then:
-          - button.press: reset
+          - button.press: factory_reset_button
 
 switch:
   - platform: gpio
-    name: "${channel_1_name}"
+    name: Switch
     pin: GPIO12
-    id: relay_1
+    id: relay
+    restore_mode: ${switch_restore_mode}
+    icon: ${switch_icon}
 
-status_led:
-  pin:
-    number: GPIO13
-    inverted: true
-
-button:
-  - platform: restart
-    name: Restart
-  - platform: factory_reset
-    name: Restart with Factory Default Settings
+light:
+  - platform: status_led
+    name: Status LED
+    pin:
+      number: GPIO13
+      inverted: true
+    entity_category: config
     disabled_by_default: true
-    id: reset
-
-sensor:
-  - platform: wifi_signal
-    name: WiFi Signal dB
-    id: wifi_signal_db
-    update_interval: 60s
-
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: IP Address
-    ssid:
-      name: Connected SSID
-    mac_address:
-      name: Mac Address
