@@ -1,99 +1,118 @@
 ---
 substitutions:
-  # Device defaults
-  device_name: sonoff-mini-r2
+  name: sonoff-mini-r2
   friendly_name: Sonoff Mini R2
-  device_description: Sonoff DIY Smart Switch
-  channel_1_name: Light
-  restore_mode: RESTORE_DEFAULT_OFF
+  comment: Sonoff Mini R2 Smart Switch
 
-  # Project info
-  project_name: "sonoff.mini-r2"
-  project_version: "2.0"
+  # Underlying restore mode for the switch
+  switch_restore_mode: "RESTORE_DEFAULT_OFF"
 
-  # Credentials
-  wifi_password: "12345678"
+packages:
+  base: !include modules/base.yaml
 
 esphome:
-  name: "${device_name}"
-  name_add_mac_suffix: true
-  friendly_name: "${friendly_name}"
-  comment: "${device_description}"
+  min_version: 2024.6.0
   project:
-    name: "${project_name}"
-    version: "${project_version}"
+    name: "Sonoff.Mini R2"
+    version: "v2.0.0-scsole"
+  on_boot:
+    - priority: 600
+      then:
+        - select.set_index:
+            id: power_mode
+            index: !lambda |-
+              return id(restore_mode) - 1;
+        - lambda: |-
+            switch(id(restore_mode))
+            {
+              case 1:
+              {
+                id(relay_1).turn_off();
+                break;
+              }
+              case 2:
+              {
+                id(relay_1).turn_on();
+                break;
+              }
+              default:
+              {
+                break;
+              }
+            }
 
 esp8266:
   board: esp01_1m
   restore_from_flash: true
 
-# To be able to get logs from the device via serial and api.
-logger:
-
-# API is a requirement of the dashboard import.
-api:
-
-# OTA is required for Over-the-Air updating.
-ota:
-  - platform: esphome
-
-# Public location of this yaml file.
 dashboard_import:
-  package_import_url: github://scsole/esphome-device-configs/sonoff-mini-r2.yaml@main
+  package_import_url: github://scsole/esphome-device-configs/sonoff-mini-r2.yaml
+  import_full_config: false
 
-wifi:
-  # Setup a wifi access point.
-  ap:
-    password: "${wifi_password}"
+globals:
+  - id: restore_mode
+    type: int
+    restore_value: yes
+    initial_value: "3" # 1 = Always_Off, 2 = Always_On, 3 = Restore_State
 
-# In combination with wifi `ap`, allow the user to provision wifi credentials to the device.
-captive_portal:
+select:
+  - platform: template
+    name: "Power On State"
+    id: power_mode
+    optimistic: true
+    icon: mdi:electric-switch
+    options:
+      - Always Off
+      - Always On
+      - Restore State
+    on_value:
+      then:
+        - lambda: |-
+            id(restore_mode) = i + 1;
+    entity_category: config
 
 binary_sensor:
   # Built-in button
   - platform: gpio
-    name: Button
     pin:
       number: GPIO0
-      mode:
-        input: true
-        pullup: true
+      mode: INPUT_PULLUP
       inverted: true
-    internal: true
+    name: Button
+    disabled_by_default: true
     on_multi_click:
       - timing:
           - ON for at most 1s
-          - OFF for at least 0.01s
+          - OFF for at least 0.1s
         then:
           - light.toggle: light_1
       - timing:
           - ON for at least 4s
         then:
-          - button.press: reset
+          - button.press: factory_reset_button
+
   # External switch
   - platform: gpio
     name: Input
-    pin: GPIO04
+    pin:
+      number: GPIO4
+      inverted: true
     id: switch_1
     disabled_by_default: true
     # Edge
-    on_press:
-      then:
-        - light.toggle:
-            id: light_1
-    on_release:
-      then:
-        - light.toggle:
-            id: light_1
-    # Toggle
     # on_press:
     #   then:
-    #     - light.turn_on:
-    #         id: light_1
+    #     - light.toggle: light_1
     # on_release:
     #   then:
-    #     - light.turn_off:
-    #         id: light_1
+    #     - light.toggle: light_1
+    # Toggle
+    on_press:
+      then:
+        - light.turn_on: light_1
+    on_release:
+      then:
+        - light.turn_off: light_1
 
 output:
   - platform: gpio
@@ -102,36 +121,15 @@ output:
 
 light:
   - platform: binary
-    name: "${channel_1_name}"
+    name: Light
     output: relay_1
     id: light_1
-    restore_mode: ${restore_mode}
+    restore_mode: ${switch_restore_mode}
 
-
-status_led:
-  pin:
-    number: GPIO13
-    inverted: true
-
-button:
-  - platform: restart
-    name: Restart
-  - platform: factory_reset
-    name: Restart with Factory Default Settings
+  - platform: status_led
+    name: Status LED
+    pin:
+      number: GPIO13
+      inverted: true
+    entity_category: config
     disabled_by_default: true
-    id: reset
-
-sensor:
-  - platform: wifi_signal
-    name: WiFi Signal dB
-    id: wifi_signal_db
-    update_interval: 60s
-
-text_sensor:
-  - platform: wifi_info
-    ip_address:
-      name: IP Address
-    ssid:
-      name: Connected SSID
-    mac_address:
-      name: Mac Address
