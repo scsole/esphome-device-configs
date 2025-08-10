@@ -1,0 +1,48 @@
+---
+substitutions:
+  name: "lolin-sht30"
+  friendly_name: "Lolin SHT30 Sensor"
+  comment: "Lolin SHT30 Temperature & Humidity Sensor"
+
+  # Time between sensor updates
+  update_interval: "30s"
+
+packages:
+  base: !include modules/base.yaml
+
+esphome:
+  min_version: 2024.6.0
+  project:
+    name: "Lolin.D1 Mini SHT30"
+    version: "v1.0.0"
+
+esp8266:
+  board: d1_mini
+  restore_from_flash: true
+
+dashboard_import:
+  package_import_url: github://scsole/esphome-device-configs/lolin-d1-mini-sht30.yaml
+  import_full_config: false
+
+i2c:
+  sda: 4
+  scl: 5
+
+sensor:
+  - platform: sht3xd
+    temperature:
+      name: Temperature
+      id: temperature
+    humidity:
+      name: Humidity
+    address: 0x45
+    update_interval: ${update_interval}
+
+light:
+  - platform: status_led
+    name: Status LED
+    pin:
+      number: 2
+      inverted: true
+    entity_category: config
+    disabled_by_default: true
